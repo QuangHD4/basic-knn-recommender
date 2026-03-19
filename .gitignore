@@ -1,3 +1,12 @@
+# User defined files
+review_guide/
+paper/
+project_requirements/
+trash/
+
+# Compressed data file
+*.zip
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]

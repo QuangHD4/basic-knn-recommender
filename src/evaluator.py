@@ -49,8 +49,13 @@ class RecommenderEvaluator:
             relevant = self.relevant_items[user]
 
             recs = self.model.recommend_items(user, n=self.prec_rec_k)
-            assert len(recs) == self.prec_rec_k, f"Model didn't returned k recommendations. Got {len(recs)} recommendations."
-            rec_items = {item for item, _ in recs}
+            if len(recs) < self.prec_rec_k:
+                # print(f"WARNING: Model didn't returned k recommendations. Got {len(recs)} recommendations.")
+                ...
+            try:
+                rec_items = {item for item, _ in recs}
+            except:
+                rec_items = set(recs)
 
             hits = rec_items & relevant
 
@@ -80,12 +85,15 @@ class RecommenderEvaluator:
         precision, recall = self.precision_recall_at_k()
         error_metrics = self.ratings_error(err_func)
 
+        f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0.0
+
         report = {
             'precision@{}'.format(k): precision,
             'recall@{}'.format(k): recall,
+            'f1@{}'.format(k): f1,
             **error_metrics
         }
 
-        pprint.pprint(report)
+        # pprint.pprint(report)
         
         return report

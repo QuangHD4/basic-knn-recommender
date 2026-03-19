@@ -2,16 +2,22 @@ import pandas as pd
 import numpy as np
 from sklearn.neighbors import NearestNeighbors
 from scipy.sparse import csr_matrix
+from sklearn.base import BaseEstimator
 
 
-class UserKNNBasicRecommender:
+class UserKNNBasicRecommender(BaseEstimator):
 
-    def __init__(self, n_neighbors=20, metric="cosine", min_support:int=5, center_ratings=True):
+    @property
+    def __name__(self):
+        return type(self).__name__
+
+
+    def __init__(self, n_neighbors=20, metric="cosine", min_support=5, center_ratings=True):
 
         self.n_neighbors = n_neighbors
         self.metric = metric
+        self.min_support = min_support
         self.center_ratings = center_ratings
-        self.min_support = min_support                    # New: min neighbors who must have rated an item
 
         # internal data
         self.user_ids = None
@@ -28,6 +34,10 @@ class UserKNNBasicRecommender:
 
 
     def fit(self, ratings_df):
+        """
+        Create user-item matrix
+        Find k neighbors for each user (with similarity scores)
+        """
         # create user-item matrix
         user_item_df = ratings_df.pivot_table(
             index="user_id",
@@ -43,10 +53,8 @@ class UserKNNBasicRecommender:
 
         self.user_item = user_item_df.values.astype(float)
 
-        # compute user means
-        self.user_means = np.nanmean(self.user_item, axis=1)
-
         # center ratings if needed
+        self.user_means = np.nanmean(self.user_item, axis=1)
         if self.center_ratings:
             centered = self.user_item - self.user_means[:, None]
         else:
@@ -70,13 +78,18 @@ class UserKNNBasicRecommender:
         
         sims = self.neighbor_sims.flatten()
 
-        print("mean similarity:", sims.mean())
-        print("median similarity:", np.median(sims))
-        print("max similarity:", sims.max())
-        print("min similarity:", sims.min())
+        # print("mean similarity:", sims.mean())
+        # print("median similarity:", np.median(sims))
+        # print("max similarity:", sims.max())
+        # print("min similarity:", sims.min())
 
 
     def predict_rating(self, user_id, item_id):
+        """
+        Find neighbors of user_id, filtered by whether they have rated item_id
+        Take the sum of CENTERED ratings of neighbors weighted by similarity
+        Add back the user mean and return
+        """
 
         if user_id not in self.user_index or item_id not in self.item_index:
             return np.nan
@@ -120,6 +133,15 @@ class UserKNNBasicRecommender:
 
 
     def recommend_items(self, user_id, n=10):
+        """
+        Find neighbors of user_id
+        Take the sum of CENTERED ratings of neighbors weighted by similarity for ALL items
+        Add back the user mean to get actual predicted ratings
+        Remove: items already seen by the user, items with no ratings from neighbors, items with insufficient support
+        Clip ratings to valid range [1, 5] and sort in descending order
+        Return top n items
+        """
+
         if user_id not in self.user_index:
             return []
 
