@@ -30,6 +30,7 @@ This project is a hands-on exploration to understand the main mechanisms of the 
    ```bash
    python knn_cf_test.py
    ```
+   Alternatively, you can run the notebook `knn_collaborative_filtering.ipynb`. It contains mostly the same code in knn_cf_test.py, but more interactive
 4. Check the console output for Cross-Validation summaries and the `figures/` directory for generated plots showing the impact of `min_support` and `n_neighbors`.
 
 ## Key Learnings & Takeaways
